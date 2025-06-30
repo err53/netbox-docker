@@ -5,7 +5,42 @@ services:
       - postgres
       - redis
       - redis-cache
-    env_file: env/netbox.env
+    environment:
+      - ALLOWED_HOSTS=${SERVICE_FQDN_NETBOX}
+      - CORS_ORIGIN_ALLOW_ALL=True
+      - DB_HOST=postgres
+      - DB_NAME=netbox
+      - DB_PASSWORD=${SERVICE_PASSWORD_DB}
+      - DB_USER=netbox
+      - EMAIL_FROM=netbox@bar.com
+      - EMAIL_PASSWORD=
+      - EMAIL_PORT=25
+      - EMAIL_SERVER=localhost
+      - EMAIL_SSL_CERTFILE=
+      - EMAIL_SSL_KEYFILE=
+      - EMAIL_TIMEOUT=5
+      - EMAIL_USERNAME=netbox
+      # EMAIL_USE_SSL and EMAIL_USE_TLS are mutually exclusive, i.e. they can't both be `true`!
+      - EMAIL_USE_SSL=false
+      - EMAIL_USE_TLS=false
+      - GRAPHQL_ENABLED=true
+      - HOUSEKEEPING_INTERVAL=86400
+      - MEDIA_ROOT=/opt/netbox/netbox/media
+      - METRICS_ENABLED=false
+      - REDIS_CACHE_DATABASE=1
+      - REDIS_CACHE_HOST=redis-cache
+      - REDIS_CACHE_INSECURE_SKIP_TLS_VERIFY=false
+      - REDIS_CACHE_PASSWORD=${SERVICE_PASSWORD_REDISCACHE}
+      - REDIS_CACHE_SSL=false
+      - REDIS_DATABASE=0
+      - REDIS_HOST=redis
+      - REDIS_INSECURE_SKIP_TLS_VERIFY=false
+      - REDIS_PASSWORD=${SERVICE_PASSWORD_REDIS}
+      - REDIS_SSL=false
+      - RELEASE_CHECK_URL=https://api.github.com/repos/netbox-community/netbox/releases
+      - SECRET_KEY=${SERVICE_BASE64_64_COOLIFY}
+      - SKIP_SUPERUSER=true
+      - WEBHOOKS_ENABLED=true
     user: "unit:root"
     healthcheck:
       test: curl -f http://localhost:8080/login/ || exit 1
@@ -17,6 +52,8 @@ services:
       - netbox-media-files:/opt/netbox/netbox/media:rw
       - netbox-reports-files:/opt/netbox/netbox/reports:rw
       - netbox-scripts-files:/opt/netbox/netbox/scripts:rw
+    restart: unless-stopped
+
   netbox-worker:
     <<: *netbox
     depends_on:
@@ -31,6 +68,8 @@ services:
       start_period: 20s
       timeout: 3s
       interval: 15s
+    restart: unless-stopped
+
   netbox-housekeeping:
     <<: *netbox
     depends_on:
@@ -43,6 +82,7 @@ services:
       start_period: 20s
       timeout: 3s
       interval: 15s
+    restart: unless-stopped
 
   # postgres
   postgres:
@@ -53,9 +93,13 @@ services:
       timeout: 30s
       interval: 10s
       retries: 5
-    env_file: env/postgres.env
+    environment:
+      - POSTGRES_DB=netbox
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_DB}
+      - POSTGRES_USER=netbox
     volumes:
       - netbox-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   # redis
   redis:
@@ -70,9 +114,12 @@ services:
       timeout: 3s
       interval: 1s
       retries: 5
-    env_file: env/redis.env
+    environment:
+      - REDIS_PASSWORD=${SERVICE_PASSWORD_REDIS}
     volumes:
       - netbox-redis-data:/data
+    restart: unless-stopped
+
   redis-cache:
     image: docker.io/valkey/valkey:8.1-alpine
     command:
@@ -80,9 +127,11 @@ services:
       - -c # this is to evaluate the $REDIS_PASSWORD from the env
       - valkey-server --requirepass $$REDIS_PASSWORD ## $$ because of docker-compose
     healthcheck: *redis-healthcheck
-    env_file: env/redis-cache.env
+    environment:
+      - REDIS_PASSWORD=${SERVICE_PASSWORD_REDISCACHE}
     volumes:
       - netbox-redis-cache-data:/data
+    restart: unless-stopped
 
 volumes:
   netbox-media-files:
