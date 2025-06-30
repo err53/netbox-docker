@@ -1,6 +1,9 @@
 services:
   netbox: &netbox
-    image: docker.io/netboxcommunity/netbox:${VERSION-v4.3-3.3.0}
+    image: netbox:latest-plugins
+    build:
+      context: .
+      dockerfile: Dockerfile-Plugins
     depends_on:
       - postgres
       - redis
@@ -56,6 +59,8 @@ services:
 
   netbox-worker:
     <<: *netbox
+    image: netbox:latest-plugins
+    pull_policy: never
     depends_on:
       netbox:
         condition: service_healthy
@@ -72,6 +77,8 @@ services:
 
   netbox-housekeeping:
     <<: *netbox
+    image: netbox:latest-plugins
+    pull_policy: never
     depends_on:
       netbox:
         condition: service_healthy
