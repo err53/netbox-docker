@@ -9,7 +9,7 @@ services:
       - redis
       - redis-cache
     environment:
-      - ALLOWED_HOSTS=${SERVICE_FQDN_NETBOX}
+      - ALLOWED_HOSTS=0.0.0.0
       - CORS_ORIGIN_ALLOW_ALL=True
       - DB_HOST=postgres
       - DB_NAME=netbox
